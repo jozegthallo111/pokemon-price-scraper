@@ -11,7 +11,8 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-CHROMEDRIVER_PATH = "/content/chromedriver-linux64/chromedriver"
+# ✅ Use the correct ChromeDriver path for GitHub Actions and Linux
+CHROMEDRIVER_PATH = "/usr/local/bin/chromedriver"
 BASE_URL = "https://www.pricecharting.com"
 CATEGORY_URL = "https://www.pricecharting.com/category/pokemon-cards"
 PROCESSED_CARDS_FILE = "scraped_cards.txt"
@@ -23,10 +24,13 @@ def init_driver():
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
-    options.add_argument(f"--user-data-dir=/tmp/unique_profile_{int(time.time())}")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--window-size=1920x1080")
+    # Optional: Set binary location if needed
+    # options.binary_location = "/usr/bin/google-chrome"
+
     service = Service(CHROMEDRIVER_PATH)
     driver = webdriver.Chrome(service=service, options=options)
-    driver.set_window_size(1920, 1080)
     return driver
 
 
@@ -36,7 +40,7 @@ def fetch_console_urls(driver):
     try:
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.sets")))
     except TimeoutException:
-        print("Timeout waiting for console sets container, trying fallback...")
+        print("Timeout waiting for console sets container.")
     anchors = driver.find_elements(By.CSS_SELECTOR, "a[href^='/console/']")
     return list({a.get_attribute("href") for a in anchors if a.get_attribute("href").startswith(BASE_URL + "/console/pokemon")})
 
