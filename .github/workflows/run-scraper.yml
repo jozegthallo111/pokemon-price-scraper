@@ -1,46 +1,46 @@
 name: Run Scraper
 
 on:
-  workflow_dispatch:   # lets you run manually
-  push:                # also runs when you push any changes
+  workflow_dispatch:   # Manual trigger
+  push:                # Auto-run on code push
 
 jobs:
-  build-and-run:
+  run-scraper-job:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: 🐍 Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Chrome (v124) and Chromedriver
+      - name: 🧩 Install Chrome (v124) and Chromedriver (v124)
         run: |
           sudo apt update
           sudo apt install -y wget unzip curl gnupg libglib2.0-0 libnss3 libxss1 libatk-bridge2.0-0 libgtk-3-0 libu2f-udev libvulkan1 libxi6 libxtst6 fonts-liberation xdg-utils
 
-          # Download and install Chrome v124
+          # Install Chrome v124
           wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/124.0.6367.91/linux64/chrome-linux64.zip
           unzip chrome-linux64.zip
           sudo mv chrome-linux64 /opt/google
-          sudo ln -sf /opt/google/chrome-linux64/chrome /usr/bin/google-chrome  # <- overwrite existing link
+          sudo ln -sf /opt/google/chrome-linux64/chrome /usr/bin/google-chrome
 
-          # Download and install Chromedriver v124
+          # Install Chromedriver v124
           wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/124.0.6367.91/linux64/chromedriver-linux64.zip
           unzip chromedriver-linux64.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
           sudo chmod +x /usr/local/bin/chromedriver
 
-      - name: Install Python dependencies
+      - name: 📦 Install Python requirements
         run: pip install -r requirements.txt
 
-      - name: Run scraper
+      - name: ▶️ Run Scraper
         run: python scraper.py
 
-      - name: Upload CSV result
+      - name: 📤 Upload CSV result
         uses: actions/upload-artifact@v4
         with:
           name: scraped-csv
