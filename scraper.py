@@ -2,7 +2,6 @@ import time
 import csv
 import os
 import zipfile
-from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -11,42 +10,54 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# ✅ ChromeDriver installed manually at this location in GitHub Actions
-CHROMEDRIVER_PATH = "/usr/local/bin/chromedriver"
-# ✅ Custom Chrome binary path (Chrome v124)
-CHROME_BINARY_PATH = "/opt/google/chrome-linux64/chrome"
-
+CHROMEDRIVER_PATH = "/content/chromedriver-linux64/chromedriver"
 BASE_URL = "https://www.pricecharting.com"
 CATEGORY_URL = "https://www.pricecharting.com/category/pokemon-cards"
 PROCESSED_CARDS_FILE = "scraped_cards.txt"
 CSV_FILENAME = "allcorectpricees.csv"
 
+# The exact set URLs to scrape, based on the <ul> content you provided:
+TARGET_SET_PATHS = [
+    "/console/pokemon-promo",
+    "/console/pokemon-prismatic-evolutions",
+    "/console/pokemon-journey-together",
+    "/console/pokemon-scarlet-&-violet-151",
+    "/console/pokemon-base-set",
+    "/console/pokemon-surging-sparks",
+    "/console/pokemon-crown-zenith",
+    "/console/pokemon-obsidian-flames",
+    "/console/pokemon-paradox-rift",
+    "/console/pokemon-scarlet-&-violet",
+    "/console/pokemon-paldea-evolved",
+    "/console/pokemon-temporal-forces",
+    "/console/pokemon-paldean-fates",
+    "/console/pokemon-stellar-crown",
+    "/console/pokemon-evolving-skies",
+    "/console/pokemon-twilight-masquerade",
+    "/console/pokemon-evolutions",
+    "/console/pokemon-japanese-promo",
+    "/console/pokemon-silver-tempest",
+    "/console/pokemon-celebrations",
+]
 
 def init_driver():
     options = Options()
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920x1080")
-    
-    # ✅ Force Selenium to use the correct Chrome binary
-    options.binary_location = CHROME_BINARY_PATH
-
+    options.add_argument(f"--user-data-dir=/tmp/unique_profile_{int(time.time())}")
     service = Service(CHROMEDRIVER_PATH)
     driver = webdriver.Chrome(service=service, options=options)
+    driver.set_window_size(1920, 1080)
     return driver
 
 
-def fetch_console_urls(driver):
-    driver.get(CATEGORY_URL)
-    wait = WebDriverWait(driver, 10)
-    try:
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.sets")))
-    except TimeoutException:
-        print("Timeout waiting for console sets container.")
-    anchors = driver.find_elements(By.CSS_SELECTOR, "a[href^='/console/']")
-    return list({a.get_attribute("href") for a in anchors if a.get_attribute("href").startswith(BASE_URL + "/console/pokemon")})
+def fetch_console_urls():
+    """
+    Instead of scraping all console URLs from the site,
+    only return the full URLs matching TARGET_SET_PATHS.
+    """
+    return [BASE_URL + path for path in TARGET_SET_PATHS]
 
 
 def get_card_links_from_console(driver, console_url):
@@ -58,7 +69,7 @@ def get_card_links_from_console(driver, console_url):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)
         cards = driver.find_elements(By.CSS_SELECTOR, "a[href^='/game/']")
-        card_links.update(card.get_attribute('href') for card in cards)
+        card_links.update(BASE_URL + card.get_attribute('href') for card in cards)
         new_height = driver.execute_script("return document.body.scrollHeight")
         if new_height == last_height:
             break
@@ -141,7 +152,7 @@ def load_processed_cards():
 def main():
     driver = init_driver()
     try:
-        console_urls = fetch_console_urls(driver)
+        console_urls = fetch_console_urls()
         processed_cards = load_processed_cards()
         all_cards_data = []
         first_save = True
