@@ -2,6 +2,7 @@ import time
 import csv
 import os
 import zipfile
+import subprocess
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -16,7 +17,7 @@ CATEGORY_URL = "https://www.pricecharting.com/category/pokemon-cards"
 PROCESSED_CARDS_FILE = "scraped_cards.txt"
 CSV_FILENAME = "allcorectpricees.csv"
 
-# The exact set URLs to scrape, based on the <ul> content you provided:
+
 TARGET_SET_PATHS = [
     "/console/pokemon-promo",
     "/console/pokemon-prismatic-evolutions",
@@ -40,6 +41,19 @@ TARGET_SET_PATHS = [
     "/console/pokemon-celebrations",
 ]
 
+def git_save_and_push(files, commit_message="Auto-save data update"):
+    """
+    Commit and push specified files to GitHub.
+    `files` is a list of file paths to add and commit.
+    """
+    try:
+        subprocess.run(["git", "add"] + files, check=True)
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+        subprocess.run(["git", "push", "origin", "main"], check=True)
+        print(f"Git push successful for files: {files}")
+    except subprocess.CalledProcessError as e:
+        print(f"Git command failed: {e}")
+
 def init_driver():
     options = Options()
     options.add_argument("--headless=new")
@@ -51,14 +65,8 @@ def init_driver():
     driver.set_window_size(1920, 1080)
     return driver
 
-
 def fetch_console_urls():
-    """
-    Instead of scraping all console URLs from the site,
-    only return the full URLs matching TARGET_SET_PATHS.
-    """
     return [BASE_URL + path for path in TARGET_SET_PATHS]
-
 
 def get_card_links_from_console(driver, console_url):
     driver.get(console_url)
@@ -76,13 +84,11 @@ def get_card_links_from_console(driver, console_url):
         last_height = new_height
     return list(card_links)
 
-
 def clean_price(price_elem):
     if price_elem:
         text = price_elem.text.strip()
         return text if text != "-" else "N/A"
     return "N/A"
-
 
 def fetch_card_data(driver, card_url):
     driver.get(card_url)
@@ -123,7 +129,6 @@ def fetch_card_data(driver, card_url):
         "Card URL": card_url
     }
 
-
 def save_to_csv(data, filename=CSV_FILENAME, write_header=False, mode='a'):
     if not data:
         print("No data to save.")
@@ -134,20 +139,21 @@ def save_to_csv(data, filename=CSV_FILENAME, write_header=False, mode='a'):
             writer.writeheader()
         writer.writerows(data)
     print(f"Saved to {filename}")
-
+    # Auto push after saving
+    git_save_and_push([filename, PROCESSED_CARDS_FILE], f"Auto-save CSV and processed cards at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
 def zip_csv_file(csv_filename=CSV_FILENAME, zip_filename="allcorectpricees.zip"):
     with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
         zipf.write(csv_filename, arcname=os.path.basename(csv_filename))
     print(f"Zipped to {zip_filename}")
-
+    # Auto push zip file as well
+    git_save_and_push([zip_filename], f"Auto-save ZIP at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
 def load_processed_cards():
     if not os.path.exists(PROCESSED_CARDS_FILE):
         return set()
     with open(PROCESSED_CARDS_FILE, "r", encoding="utf-8") as f:
         return set(line.strip() for line in f if line.strip())
-
 
 def main():
     driver = init_driver()
@@ -183,7 +189,6 @@ def main():
     finally:
         driver.quit()
         print("Driver closed.")
-
 
 if __name__ == "__main__":
     main()
