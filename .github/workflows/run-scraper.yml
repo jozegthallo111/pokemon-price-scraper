@@ -17,18 +17,21 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Chrome & Chromedriver
+      - name: Install Chrome (v124) and Chromedriver
         run: |
           sudo apt update
           sudo apt install -y wget unzip curl gnupg libglib2.0-0 libnss3 libxss1 libatk-bridge2.0-0 libgtk-3-0 libu2f-udev libvulkan1 libxi6 libxtst6 fonts-liberation xdg-utils
-          
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt install -y ./google-chrome-stable_current_amd64.deb
 
-          CHROME_VERSION=$(google-chrome --version | cut -d ' ' -f 3 | cut -d '.' -f 1)
-          wget -O chromedriver.zip "https://chromedriver.storage.googleapis.com/$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION})/chromedriver_linux64.zip"
-          unzip chromedriver.zip
-          sudo mv chromedriver /usr/local/bin/
+          # Install Chrome v124
+          wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/124.0.6367.91/linux64/chrome-linux64.zip
+          unzip chrome-linux64.zip
+          sudo mv chrome-linux64 /opt/google
+          sudo ln -s /opt/google/chrome-linux64/chrome /usr/bin/google-chrome
+
+          # Install matching Chromedriver v124
+          wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/124.0.6367.91/linux64/chromedriver-linux64.zip
+          unzip chromedriver-linux64.zip
+          sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
           sudo chmod +x /usr/local/bin/chromedriver
 
       - name: Install Python dependencies
