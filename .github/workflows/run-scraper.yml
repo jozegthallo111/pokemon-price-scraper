@@ -1,8 +1,8 @@
 name: Run Scraper
 
 on:
-  workflow_dispatch:  # Manual trigger button in GitHub
-  push:               # Also runs when you push to the repo
+  workflow_dispatch:
+  push:
 
 jobs:
   build-and-run:
@@ -17,25 +17,27 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install Chrome & Chromedriver
         run: |
           sudo apt update
-          sudo apt install -y wget unzip xvfb libxi6 libgconf-2-4 libnss3 libxss1 libappindicator1 libasound2 fonts-liberation libu2f-udev libvulkan1
+          sudo apt install -y wget unzip curl gnupg libglib2.0-0 libnss3 libxss1 libatk-bridge2.0-0 libgtk-3-0 libu2f-udev libvulkan1 libxi6 libxtst6 fonts-liberation xdg-utils
+          
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt install -y ./google-chrome-stable_current_amd64.deb
+
           CHROME_VERSION=$(google-chrome --version | cut -d ' ' -f 3 | cut -d '.' -f 1)
           wget -O chromedriver.zip "https://chromedriver.storage.googleapis.com/$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION})/chromedriver_linux64.zip"
           unzip chromedriver.zip
           sudo mv chromedriver /usr/local/bin/
-          chmod +x /usr/local/bin/chromedriver
-          pip install -r requirements.txt
+          sudo chmod +x /usr/local/bin/chromedriver
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
 
       - name: Run scraper
-        run: |
-          echo "Running scraper"
-          python scraper.py
+        run: python scraper.py
 
-      - name: Upload CSV as artifact
+      - name: Upload CSV result
         uses: actions/upload-artifact@v4
         with:
           name: scraped-csv
