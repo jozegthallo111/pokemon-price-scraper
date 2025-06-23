@@ -1,8 +1,8 @@
 name: Run Scraper
 
 on:
-  workflow_dispatch:
-  push:
+  workflow_dispatch:   # lets you run manually
+  push:                # also runs when you push any changes
 
 jobs:
   build-and-run:
@@ -22,13 +22,13 @@ jobs:
           sudo apt update
           sudo apt install -y wget unzip curl gnupg libglib2.0-0 libnss3 libxss1 libatk-bridge2.0-0 libgtk-3-0 libu2f-udev libvulkan1 libxi6 libxtst6 fonts-liberation xdg-utils
 
-          # Install Chrome v124
+          # Download and install Chrome v124
           wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/124.0.6367.91/linux64/chrome-linux64.zip
           unzip chrome-linux64.zip
           sudo mv chrome-linux64 /opt/google
-          sudo ln -s /opt/google/chrome-linux64/chrome /usr/bin/google-chrome
+          sudo ln -sf /opt/google/chrome-linux64/chrome /usr/bin/google-chrome  # <- overwrite existing link
 
-          # Install matching Chromedriver v124
+          # Download and install Chromedriver v124
           wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/124.0.6367.91/linux64/chromedriver-linux64.zip
           unzip chromedriver-linux64.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
